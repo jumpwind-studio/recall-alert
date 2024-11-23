@@ -5,13 +5,23 @@
   "scripts": {
     "deploy": "wrangler deploy",
     "dev": "wrangler dev --test-scheduled",
+    "dev:debug": "wrangler dev --test-scheduled --log-level debug",
     "start": "wrangler dev --test-scheduled",
-    "cf-typegen": "wrangler types"
+    "cf-typegen": "wrangler types",
+    "test:cron": "curl \"http://localhost:8787/__scheduled?cron=*+*+*+*+*\""
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
     "@cloudflare/workers-types": "^4.20241112.0",
-    "typescript": "^5.5.2",
-    "wrangler": "^3.60.3"
+    "@types/he": "^1.2.3",
+    "drizzle-kit": "^0.28.1",
+    "typescript": "^5.7.2",
+    "wrangler": "^3.90.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.36.4",
+    "he": "^1.2.0",
+    "valibot": "1.0.0-beta.8"
   }
 }
