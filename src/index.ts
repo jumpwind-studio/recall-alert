@@ -5,29 +5,23 @@
  * configurable interval:
  * https://developers.cloudflare.com/workers/platform/triggers/cron-triggers/
  *
- * - Run `npm run dev` in your terminal to start a development server
+ * - Run `pnpm run dev` in your terminal to start a development server
  * - Run `curl "http://localhost:8787/__scheduled?cron=*+*+*+*+*"` to see your worker in action
- * - Run `npm run deploy` to publish your worker
+ * - Run `pnpm run deploy` to publish your worker
  *
  * Bind resources to your worker in `wrangler.toml`. After adding bindings, a type definition for the
- * `Env` object can be regenerated with `npm run cf-typegen`.
+ * `Env` object can be regenerated with `pnpm run cf-typegen`.
  *
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
-export default {
-	// The scheduled handler is invoked at the interval set in our wrangler.toml's
-	// [[triggers]] configuration.
-	async scheduled(event, env, ctx): Promise<void> {
-		// A Cron Trigger can make requests to other endpoints on the Internet,
-		// publish to a Queue, query a D1 Database, and much more.
-		//
-		// We'll keep it simple and make an API call to a Cloudflare API:
-		let resp = await fetch('https://api.cloudflare.com/client/v4/ips');
-		let wasSuccessful = resp.ok ? 'success' : 'fail';
+import { fdaHandler } from './handlers';
 
-		// You could store this result in KV, write to a D1 Database, or publish to a Queue.
-		// In this template, we'll just log the result:
-		console.log(`trigger fired at ${event.cron}: ${wasSuccessful}`);
-	},
+export default {
+  async fetch() {
+    return new Response('OK', { status: 200 });
+  },
+  async scheduled(event, env, ctx): Promise<void> {
+    return fdaHandler(event, env, ctx);
+  },
 } satisfies ExportedHandler<Env>;
