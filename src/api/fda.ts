@@ -1,65 +1,50 @@
+import type { NewRecall } from '@/db/schemas.sql';
 import { Client } from '@/lib/client';
 import he from 'he';
 import * as v from 'valibot';
-
-// biome-ignore lint/suspicious/noExplicitAny: Types
-type ExtractEntries<TSchema extends v.ObjectSchema<any, any>> = TSchema extends v.ObjectSchema<infer T, any>
-  ? T
-  : never;
-// biome-ignore lint/suspicious/noExplicitAny: Types
-type InferObjectEntries<TSchema extends v.ObjectSchema<any, any>> = v.ObjectSchema<
-  ExtractEntries<TSchema>,
-  undefined
->;
 
 const REGEX_DATE = /datetime="([^"]+)"/;
 const REGEX_HREF = /href="([^"]+)"/;
 const REGEX_TEXT = />([^<]+)</;
 
+const FdaResponseDataSchema = v.pipe(
+  v.array(v.string()),
+  v.transform((data: string[]) => {
+    const [date, link, product, category, reason, company] = data.map((html) => he.decode(html));
+
+    const matchedDate = date.match(REGEX_DATE);
+    return {
+      date: matchedDate ? new Date(matchedDate[1]) : undefined,
+      linkHref: link.match(REGEX_HREF)?.[1] ?? '',
+      linkText: link.match(REGEX_TEXT)?.[1]?.trim() ?? '',
+      product,
+      category,
+      reason,
+      company,
+    } satisfies NewRecall;
+  }),
+);
+
 export const FdaResponseSchema = v.object({
   draw: v.number(),
   recordsTotal: v.number(),
   recordsFiltered: v.number(),
-  data: v.pipe(
-    v.array(v.array(v.string())),
-    v.transform((data: string[][]) => {
-      return data.map((row) => {
-        const [date, link, product, category, reason, company] = row.map((html) => he.decode(html));
-
-        const matchedDate = date.match(REGEX_DATE);
-        return {
-          date: matchedDate ? new Date(matchedDate[1]) : undefined,
-          link: {
-            href: link.match(REGEX_HREF)?.[1] ?? '',
-            text: link.match(REGEX_TEXT)?.[1]?.trim() ?? '',
-          },
-          product,
-          category,
-          reason,
-          company,
-        };
-      });
-    }),
-  ),
+  data: v.array(FdaResponseDataSchema),
 });
 
 export type FdaResponse = v.InferOutput<typeof FdaResponseSchema>;
 
+type Column =
+  | `columns[${number}][${'data' | 'searchable' | 'orderable' | 'name'}]`
+  | `columns[${number}][search][${'value' | 'regex'}]`;
+
 export function createFdaClient() {
   const client = new Client('FDA', {
-    method: 'GET',
     url: 'https://www.fda.gov/datatables/views/ajax',
     searchParams: () => {
-      const columns: Array<
-        [
-          (
-            | `columns[${number}][${'data' | 'searchable' | 'orderable'}]`
-            | `columns[${number}][search][${'value' | 'regex'}]`
-          ),
-          string,
-        ]
-      > = [];
+      const columns: Array<[Column, string]> = [];
       for (let i = 0; i < 8; i++) {
+        columns.push([`columns[${i}][name]`, '']);
         columns.push([`columns[${i}][data]`, i.toString()]);
         columns.push([`columns[${i}][searchable]`, 'true']);
         columns.push([`columns[${i}][orderable]`, 'true']);
@@ -105,10 +90,10 @@ export function createFdaClient() {
           status: v.pipe(
             v.optional(v.boolean()),
             v.transform((input) => {
-              if (input === undefined) {
-                return 'All';
+              if (input !== undefined) {
+                return input ? 'Yes' : 'No';
               }
-              return input ? 'Yes' : 'No';
+              return 'All';
             }),
           ),
         }),
@@ -125,7 +110,7 @@ export function createFdaClient() {
 
   return {
     list: async (
-      params: v.InferInput<(typeof client)['schema']>,
+      params?: v.InferInput<(typeof client)['schema']>,
     ): Promise<
       | {
           ok: false;
@@ -137,34 +122,25 @@ export function createFdaClient() {
           meta: Omit<FdaResponse, 'data'>;
         }
     > => {
-      try {
-        const resp = await client.get(params);
-        if (!resp.ok) {
-          return {
-            ok: false,
-            error: `${resp.status} Failed to fetch data: ${resp.statusText}`,
-          };
-        }
-        const parsed = v.safeParse(FdaResponseSchema, await resp.json());
-        if (!parsed.success) {
-          return {
-            ok: false,
-            error: JSON.stringify(v.flatten(parsed.issues), null, 2),
-          };
-        }
-
-        const { data, ...meta } = parsed.output;
-        return {
-          ok: true,
-          data,
-          meta,
-        };
-      } catch (error) {
+      const resp = await client.get(params);
+      if (!resp.ok) {
+        return { ok: false, error: `${resp.status} ${resp.statusText}` };
+      }
+      const json = await resp.json();
+      const parsed = v.safeParse(FdaResponseSchema, json);
+      if (!parsed.success) {
         return {
           ok: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: JSON.stringify(v.flatten(parsed.issues), null, 2),
         };
       }
+
+      const { data, ...meta } = parsed.output;
+      return {
+        ok: true,
+        data,
+        meta,
+      };
     },
   };
 }
