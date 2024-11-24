@@ -1,12 +1,19 @@
-import { useDatabase } from './db/client';
-import { fdaHandler } from './handlers';
+import { createFdaClient } from '@/api/fda';
+import { useDatabase } from '@/db/client';
+import { recallsTable } from '@/db/schemas.sql';
 
 export default {
-  async fetch() {
+  fetch: async () => {
     return new Response('OK', { status: 200 });
   },
-  async scheduled(event, env, ctx) {
+  scheduled: async (_event, env, _ctx) => {
     const db = useDatabase(env.DB);
-    fdaHandler(db);
+
+    const fdaClient = createFdaClient();
+    const result = await fdaClient.list();
+    result.match({
+      ok: ({ data }) => db.insert(recallsTable).values(data),
+      err: () => null,
+    });
   },
 } satisfies ExportedHandler<Env>;
