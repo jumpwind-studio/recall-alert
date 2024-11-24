@@ -14,16 +14,7 @@ export async function fdaHandler(db: Database) {
 
   await db
     .insert(recallsTable)
-    .values(
-      res.data.map((entry) => {
-        const { link, ...rest } = entry;
-        return {
-          linkHref: link.href,
-          linkText: link.text,
-          ...rest,
-        };
-      }),
-    )
+    .values(res.data)
     .then((res) => {
       console.log(`Inserted ${res.results.length} rows`);
     });
