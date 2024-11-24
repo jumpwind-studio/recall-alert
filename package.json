@@ -1,6 +1,6 @@
 {
   "name": "bsky-bot-recalls",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "scripts": {
     "deploy": "wrangler deploy",
@@ -8,7 +8,14 @@
     "dev:debug": "wrangler dev --test-scheduled --log-level debug",
     "start": "wrangler dev --test-scheduled",
     "cf-typegen": "wrangler types",
-    "test:cron": "curl \"http://localhost:8787/__scheduled?cron=*+*+*+*+*\""
+    "test:cron": "curl \"http://localhost:8787/__scheduled?cron=*+*+*+*+*\"",
+    "migrate:list": "wrangler d1 migrations list DB --local",
+    "migrate:list:preview": "wrangler d1 migrations list DB --env preview",
+    "migrate:list:production": "wrangler d1 migrations list DB --env production",
+    "migrate:apply": "wrangler d1 migrations apply DB --local",
+    "migrate:apply:preview": "wrangler d1 migrations apply DB --env preview",
+    "migrate:apply:production": "wrangler d1 migrations apply DB --env production",
+    "generate":"drizzle-kit generate"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
