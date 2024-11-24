@@ -1,5 +1,6 @@
 import type { NewRecall } from '@/db/schemas.sql';
 import { Client } from '@/lib/client';
+import { Result } from '@/lib/result';
 import he from 'he';
 import * as v from 'valibot';
 
@@ -109,38 +110,16 @@ export function createFdaClient() {
   });
 
   return {
-    list: async (
-      params?: v.InferInput<(typeof client)['schema']>,
-    ): Promise<
-      | {
-          ok: false;
-          error: string;
+    list: (params?: v.InferInput<(typeof client)['schema']>) => {
+      return Result.try(async () => {
+        const resp = await client.get(params);
+        if (!resp.ok) {
+          throw new Error(`${resp.status} ${resp.statusText}`);
         }
-      | {
-          ok: true;
-          data: FdaResponse['data'];
-          meta: Omit<FdaResponse, 'data'>;
-        }
-    > => {
-      const resp = await client.get(params);
-      if (!resp.ok) {
-        return { ok: false, error: `${resp.status} ${resp.statusText}` };
-      }
-      const json = await resp.json();
-      const parsed = v.safeParse(FdaResponseSchema, json);
-      if (!parsed.success) {
-        return {
-          ok: false,
-          error: JSON.stringify(v.flatten(parsed.issues), null, 2),
-        };
-      }
 
-      const { data, ...meta } = parsed.output;
-      return {
-        ok: true,
-        data,
-        meta,
-      };
+        const { data, ...meta } = await resp.json().then((data) => v.parse(FdaResponseSchema, data));
+        return { data, meta };
+      });
     },
   };
 }
