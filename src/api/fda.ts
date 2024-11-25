@@ -110,16 +110,23 @@ export function createFdaClient() {
   });
 
   return {
-    list: (params?: v.InferInput<(typeof client)['schema']>) => {
-      return Result.try(async () => {
+    list: (params?: v.InferInput<(typeof client)['schema']>) =>
+      Result.try(async () => {
         const resp = await client.get(params);
         if (!resp.ok) {
           throw new Error(`${resp.status} ${resp.statusText}`);
         }
 
-        const { data, ...meta } = await resp.json().then((data) => v.parse(FdaResponseSchema, data));
-        return { data, meta };
-      });
-    },
+        const { data, ...meta } = v.parse(FdaResponseSchema, await resp.json());
+
+        return {
+          meta,
+          // Link hrefs are relative, so we need to resolve them
+          data: data.map((row) => ({
+            ...row,
+            linkHref: new URL(row.linkHref, client.url).href,
+          })),
+        };
+      }),
   };
 }
