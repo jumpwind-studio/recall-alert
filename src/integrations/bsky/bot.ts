@@ -1,49 +1,62 @@
-import type { AtpAgentLoginOpts } from '@atproto/api';
+import type { AppBskyFeedPost, AtpAgentLoginOpts } from '@atproto/api';
 import { Agent, CredentialSession, RichText } from '@atproto/api';
+import { isRecord } from '@atproto/api/dist/client/types/app/bsky/feed/post';
 
-type BotOptions = {
-  auth: AtpAgentLoginOpts;
-  service: URL;
-  isDryRun: boolean;
+type BskyBotOptions = {
+  service?: URL;
 };
 
-export default class Bot {
+type PostRecord = Omit<AppBskyFeedPost.Record, 'entities' | 'createdAt'>;
+
+function isPostRecord(value: unknown): value is PostRecord {
+  return isRecord(value);
+}
+
+export default class BskyBot {
   #session: CredentialSession;
   #agent: Agent;
 
-  constructor(opts: BotOptions) {
-    this.#session = new CredentialSession(opts.service);
+  constructor(auth: AtpAgentLoginOpts, opts?: BskyBotOptions) {
+    const service = opts?.service ?? new URL('https://bsky.social');
+    this.#session = new CredentialSession(service);
     this.#agent = new Agent(this.#session);
 
-    if (opts.isDryRun) {
-      console.log('Dry run mode enabled');
-    }
+    this.login(auth);
   }
 
   login: CredentialSession['login'] = async (opts) => this.#session.login(opts);
 
-  post: Agent['post'] = async (text) => {
-    if (typeof text !== 'string') {
-      return this.#agent.post(text);
+  async post(content: PostRecord | string, opts?: { publish: false }): Promise<PostRecord>;
+  async post(content: PostRecord | string, opts?: { publish: true }): Promise<{ uri: string; cid: string }>;
+  async post(
+    content: PostRecord | string,
+    opts?: { publish?: boolean },
+  ): Promise<PostRecord | { uri: string; cid: string }> {
+    const record = this.#resolvePostContent(content);
+
+    const { publish = true } = opts ?? {};
+    if (!publish) {
+      return record;
     }
 
-    const rt = new RichText({ text });
-    await rt.detectFacets(this.#agent);
-    return this.#agent.post({
+    return this.#agent.post(record);
+  }
+
+  #resolvePostContent = (content: PostRecord | string): PostRecord => {
+    if (isPostRecord(content)) {
+      return content;
+    }
+
+    const rt = new RichText({ text: content });
+    rt.detectFacets(this.#agent);
+
+    return {
       text: rt.text,
       facets: rt.facets,
-    });
+    };
   };
+}
 
-  static async run(opts: BotOptions, callback: () => Promise<string>) {
-    const bot = new Bot(opts);
-    await bot.login(opts.auth);
-
-    await callback().then(async (text) => {
-      if (opts.isDryRun) {
-        return text;
-      }
-      return bot.post({ text });
-    });
-  }
+export function createBskyBot(auth: AtpAgentLoginOpts, opts?: BskyBotOptions) {
+  return new BskyBot(auth, opts);
 }

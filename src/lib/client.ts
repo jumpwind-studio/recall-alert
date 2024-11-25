@@ -45,17 +45,20 @@ export class Client<TSchema extends AnyObjectSchema> {
     this.#searchParams = resolve(config.searchParams);
   }
 
+  get url() {
+    return this.#url;
+  }
+
   async get(params?: v.InferInput<TSchema>) {
-    const res = v.safeParse(this.schema, params);
-    if (!res.success) {
-      const errs = JSON.stringify(v.flatten(res.issues), null, 2);
-      console.warn(errs);
-      return new Response(errs, { status: 400 });
-    }
+    const res = v.parse(this.schema, params ?? {});
+    // if (!res.success) {
+    //   const errs = JSON.stringify(v.flatten(res.issues), null, 2);
+    //   return new Response(errs, { status: 400 });
+    // }
 
     const searchParams = new URLSearchParams({
       ...this.#searchParams,
-      ...(res.output ?? {}),
+      ...(res ?? {}),
     });
 
     return fetch(`${this.#url}?${searchParams}`, {
