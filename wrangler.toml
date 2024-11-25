@@ -7,8 +7,16 @@ compatibility_flags = ["nodejs_compat_v2"]
 # Cron Triggers
 # Docs: https://developers.cloudflare.com/workers/platform/triggers/cron-triggers/
 # Configuration: https://developers.cloudflare.com/workers/wrangler/configuration/#triggers
-[triggers]
+[env.dev.triggers]
 crons = ["* * * * *"] # * * * * * = run every minute
+
+[triggers]
+crons = ["*/30 * * * *"]
+
+[[workflows]]
+name = "fda-workflow"
+binding = "WORKFLOW_FDA"
+class_name = "FdaWorkflow"
 
 # Workers Logs
 # Docs: https://developers.cloudflare.com/workers/observability/logs/workers-logs/
@@ -36,8 +44,12 @@ migrations_dir = "drizzle/migrations"
 # - https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
 # Note: Use secrets to store sensitive data.
 # - https://developers.cloudflare.com/workers/configuration/secrets/
-# [vars]
-# MY_VARIABLE = "production_value"
+[env.dev.vars]
+BSKY_USERNAME = 'CF_DEV'
+
+[vars]
+BSKY_USERNAME = 'CF_PROD'
+
 
 # Bind the Workers AI model catalog. Run machine learning models, powered by serverless GPUs, on Cloudflare’s global network
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#workers-ai
