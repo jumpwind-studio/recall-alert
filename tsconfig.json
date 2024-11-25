@@ -50,6 +50,7 @@
     }
   },
   "include": [
+    "src",
     "src/env.d.ts"
   ],
   "exclude": [

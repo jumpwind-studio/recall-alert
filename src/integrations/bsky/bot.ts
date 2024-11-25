@@ -2,6 +2,8 @@ import type { AppBskyFeedPost, AtpAgentLoginOpts } from '@atproto/api';
 import { Agent, CredentialSession, RichText } from '@atproto/api';
 import { isRecord } from '@atproto/api/dist/client/types/app/bsky/feed/post';
 
+const IS_PROD = process.env.NODE_ENV === 'production';
+
 type BskyBotOptions = {
   service?: URL;
 };
@@ -36,6 +38,9 @@ export default class BskyBot {
 
     const { publish = true } = opts ?? {};
     if (!publish) {
+      return record;
+    }
+    if (!IS_PROD) {
       return record;
     }
 

@@ -12,7 +12,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "wrangler d1 migrations apply DB --local",
     "db:migrate:stage": "wrangler d1 migrations apply DB --env preview",
-    "db:migrate:production": "wrangler d1 migrations apply DB --env production",
+    "db:migrate:prod": "wrangler d1 migrations apply DB --env production",
     "db:list-migrations": "wrangler d1 migrations list DB --local",
     "db:list-migrations:stage": "wrangler d1 migrations list DB --env preview",
     "db:list-migrations:prod": "wrangler d1 migrations list DB --env production",
