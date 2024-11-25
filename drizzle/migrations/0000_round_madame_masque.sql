@@ -11,3 +11,5 @@ CREATE TABLE `recalls` (
 	`updatedAt` integer DEFAULT (strftime('%s', 'now')) NOT NULL,
 	`deleted_at` integer
 );
+--> statement-breakpoint
+CREATE UNIQUE INDEX `recalls_linkHref_unique` ON `recalls` (`linkHref`);

@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "de7fbb39-8c47-4768-8269-92e05f82bd6a",
+  "id": "5dc1bd02-02ac-4df1-9367-cd4ca1a9bf00",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "recalls": {
@@ -87,7 +87,15 @@
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "recalls_linkHref_unique": {
+          "name": "recalls_linkHref_unique",
+          "columns": [
+            "linkHref"
+          ],
+          "isUnique": true
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
