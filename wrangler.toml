@@ -6,10 +6,10 @@ compatibility_flags = ["nodejs_compat_v2"]
 
 # Variable bindings.
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
-[env.dev.vars]
-BSKY_USERNAME = 'CF_DEV'
 [vars]
 BSKY_USERNAME = 'CF_PROD'
+[env.dev.vars]
+BSKY_USERNAME = 'CF_DEV'
 
 # Docs: https://developers.cloudflare.com/workflows/
 [[workflows]]
@@ -20,21 +20,30 @@ class_name = "FdaWorkflow"
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#d1-databases
 [[d1_databases]]
 binding = "DB"
-database_name = "bsky-bot-recalls"
-database_id = "ec939b77-b797-4182-b176-af169ad8ed62"
+database_name = "recall-alert-prod"
+database_id = "b2b517f6-a2ba-4a34-a9c7-8e68d91afc32"
 migrations_dir = "drizzle/migrations"
+preview_database_id = "DB"                           # should match binding name
+[[env.dev.d1_databases]]
+binding = "DB"
+database_name = "recall-alert-dev"
+database_id = "5b3fcc04-d5f7-4842-877e-ac7bd28f32a6"
+migrations_dir = "drizzle/migrations"
+preview_database_id = "DB"                           # should match binding name
 
 # Docs: https://developers.cloudflare.com/workers/platform/triggers/cron-triggers/
 # Configuration: https://developers.cloudflare.com/workers/wrangler/configuration/#triggers
-[env.dev.triggers]
-crons = ["* * * * *"] # every minute
 [triggers]
 crons = ["*/30 * * * *"] # every 30 minutes
+[env.dev.triggers]
+crons = ["* * * * *"] # every minute
 
 # Workers Logs
 # Docs: https://developers.cloudflare.com/workers/observability/logs/workers-logs/
 # Configuration: https://developers.cloudflare.com/workers/observability/logs/workers-logs/#enable-workers-logs
 [observability]
+enabled = true
+[env.dev.observability]
 enabled = true
 
 # Automatically place your workloads in an optimal location to minimize latency.
