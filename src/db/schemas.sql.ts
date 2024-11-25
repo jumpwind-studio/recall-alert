@@ -4,7 +4,7 @@ import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 export const recallsTable = sqliteTable('recalls', {
   id: integer().notNull().primaryKey({ autoIncrement: true }),
   date: integer({ mode: 'timestamp' }).$type<Date>(),
-  linkHref: text().notNull(),
+  linkHref: text().notNull().unique(),
   linkText: text().notNull(),
   product: text().notNull(),
   category: text().notNull(),
