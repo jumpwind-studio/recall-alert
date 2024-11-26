@@ -17,6 +17,9 @@ importers:
       drizzle-orm:
         specifier: ^0.36.4
         version: 0.36.4(@cloudflare/workers-types@4.20241112.0)(better-sqlite3@11.5.0)
+      drizzle-valibot:
+        specifier: ^0.2.0
+        version: 0.2.0(drizzle-orm@0.36.4(@cloudflare/workers-types@4.20241112.0)(better-sqlite3@11.5.0))(valibot@1.0.0-beta.8(typescript@5.7.2))
       he:
         specifier: ^1.2.0
         version: 1.2.0
@@ -790,6 +793,12 @@ packages:
       sqlite3:
         optional: true
 
+  drizzle-valibot@0.2.0:
+    resolution: {integrity: sha512-+JTZZN52fFv20kGTXI1KGpysdCiedaTDpWQ6lqnxX2DD5U5tJfGPB2ROjHFjbLzK4XiH98MOhKZf174orBQAew==, tarball: https://registry.npmjs.org/drizzle-valibot/-/drizzle-valibot-0.2.0.tgz}
+    peerDependencies:
+      drizzle-orm: '>=0.23.13'
+      valibot: '>=0.20'
+
   end-of-stream@1.4.4:
     resolution: {integrity: sha512-+uw1inIHVPQoaVuHzRyXd21icM+cnt4CzD5rW+NC1wjOUSTOs+Te7FOv7AhN7vS9x/oIyhLP5PR1H+phQAHu5Q==, tarball: https://registry.npmjs.org/end-of-stream/-/end-of-stream-1.4.4.tgz}
 
@@ -1557,6 +1566,11 @@ snapshots:
     optionalDependencies:
       '@cloudflare/workers-types': 4.20241112.0
       better-sqlite3: 11.5.0
+
+  drizzle-valibot@0.2.0(drizzle-orm@0.36.4(@cloudflare/workers-types@4.20241112.0)(better-sqlite3@11.5.0))(valibot@1.0.0-beta.8(typescript@5.7.2)):
+    dependencies:
+      drizzle-orm: 0.36.4(@cloudflare/workers-types@4.20241112.0)(better-sqlite3@11.5.0)
+      valibot: 1.0.0-beta.8(typescript@5.7.2)
 
   end-of-stream@1.4.4:
     dependencies:
