@@ -1,6 +1,12 @@
 import { sql } from 'drizzle-orm';
 import { integer } from 'drizzle-orm/sqlite-core';
 
+export const id = {
+  get id() {
+    return integer().primaryKey({ autoIncrement: true });
+  },
+};
+
 export const createdAt = {
   get createdAt() {
     return integer({ mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull().$type<Date>();
