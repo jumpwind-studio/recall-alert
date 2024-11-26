@@ -10,7 +10,7 @@ const REGEX_TEXT = />([^<]+)</;
 
 const FdaResponseDataSchema = v.pipe(
   v.array(v.string()),
-  v.transform((data: string[]) => {
+  v.transform((data) => {
     const [date, link, product, category, reason, company] = data.map((html) => he.decode(html));
 
     const matchedDate = date.match(REGEX_DATE);
@@ -22,7 +22,7 @@ const FdaResponseDataSchema = v.pipe(
       category,
       reason,
       company,
-    } satisfies NewRecall;
+    } satisfies Omit<NewRecall, 'sourceId'>;
   }),
 );
 
