@@ -41,3 +41,4 @@ CREATE TABLE IF NOT EXISTS `sources` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS `sources_key_unique` ON `sources` (`key`);
+INSERT OR IGNORE INTO `sources` (`key`, `name`) VALUES ('US-FDA', 'U.S. Food and Drug Administration');
