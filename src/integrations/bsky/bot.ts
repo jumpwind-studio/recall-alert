@@ -28,8 +28,6 @@ export default class BskyBot {
 
   login: CredentialSession['login'] = async (opts) => this.#session.login(opts);
 
-  async post(content: PostRecord | string, opts?: { publish: false }): Promise<PostRecord>;
-  async post(content: PostRecord | string, opts?: { publish: true }): Promise<{ uri: string; cid: string }>;
   async post(
     content: PostRecord | string,
     opts?: { publish?: boolean },
