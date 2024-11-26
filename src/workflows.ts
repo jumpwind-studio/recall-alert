@@ -1,7 +1,7 @@
 import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from 'cloudflare:workers';
 import { createFdaClient } from '@/api/fda';
 import { useDatabase } from '@/db/client';
-import { recallsTable } from '@/db/schemas.sql';
+import { type NewPost, postsTable, recallsTable } from '@/db/schemas.sql';
 import { createBskyBot } from '@/integrations/bsky/bot';
 
 export class FdaWorkflow extends WorkflowEntrypoint<Env> {
@@ -24,16 +24,33 @@ export class FdaWorkflow extends WorkflowEntrypoint<Env> {
       },
     );
 
-    const newRecallData = await step.do('persist recall data', async () => {
+    const recallData = await step.do('persist recall data', async () => {
       const db = useDatabase(this.env.DB);
 
-      return db
+      const sourceId = await db.query.sources
+        .findFirst({
+          where: (sources, { eq }) => eq(sources.key, 'US-FDA'),
+          columns: { id: true },
+        })
+        .then((source) => source?.id);
+      if (!sourceId) {
+        throw new Error('Source not found');
+      }
+
+      const newRecalls = await db
         .insert(recallsTable)
-        .values(fdaResult.data)
+        .values(
+          fdaResult.data.map((recall) => ({
+            ...recall,
+            sourceId,
+          })),
+        )
         .onConflictDoNothing({
           target: recallsTable.linkHref,
         })
         .returning();
+
+      return newRecalls;
     });
 
     await step.do('broadcast recall data', async () => {
@@ -42,27 +59,41 @@ export class FdaWorkflow extends WorkflowEntrypoint<Env> {
         password: this.env.BSKY_PASSWORD,
       });
 
-      for (const recall of newRecallData) {
+      const posts: NewPost[] = [];
+      for (const recall of recallData) {
         await step.do(`post recall: ${recall.linkHref}`, async () => {
-          const postInfo = await bot.post(
-            {
-              text: `Recall: ${recall.product} @ ${recall.company}`,
-              langs: ['en-US'],
-              embed: {
-                $type: 'app.bsky.embed.external',
-                external: {
-                  uri: recall.linkHref,
-                  title: recall.linkText,
-                  description: `Category: ${recall.category}\nReason: ${recall.reason}`,
-                },
+          const postData = {
+            text: `Recall: ${recall.product} @ ${recall.company}`,
+            langs: ['en-US'],
+            embed: {
+              $type: 'app.bsky.embed.external',
+              external: {
+                uri: recall.linkHref,
+                title: recall.linkText,
+                description: `Category: ${recall.category}\nReason: ${recall.reason}`,
               },
             },
-            { publish: false },
-          );
+          };
+          const postInfo = await bot.post(postData, { publish: true });
 
-          console.log('Posted recall:', postInfo);
+          posts.push({
+            recallId: recall.id,
+            title: recall.product,
+            content: recall.reason,
+            uri: postInfo.uri,
+            cid: postInfo.cid,
+            raw: JSON.stringify({ postInfo }),
+            metadata: JSON.stringify({}),
+            embeds: JSON.stringify(postData.embed),
+          });
         });
       }
+
+      await step.do('persist posts', async () => {
+        const db = useDatabase(this.env.DB);
+
+        await db.insert(postsTable).values(posts).returning();
+      });
     });
   }
 }
