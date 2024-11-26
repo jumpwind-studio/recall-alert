@@ -120,8 +120,9 @@ export function createFdaClient() {
         const { data, ...meta } = v.parse(FdaResponseSchema, await resp.json());
 
         return {
+          name: client.name,
           meta,
-          // Link hrefs are relative, so we need to resolve them
+          // Link hrefs are relative, so we need to resolve them.
           data: data.map((row) => ({
             ...row,
             linkHref: new URL(row.linkHref, client.url).href,
