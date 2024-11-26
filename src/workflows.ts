@@ -1,10 +1,36 @@
 import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from 'cloudflare:workers';
 import { createFdaClient } from '@/api/fda';
 import { useDatabase } from '@/db/client';
-import { type NewPost, NewPostSchema, postsTable, recallsTable } from '@/db/schemas.sql';
+import { type NewPost, NewPostSchema, type Recall, postsTable, recallsTable } from '@/db/schemas.sql';
 import { createBskyBot } from '@/integrations/bsky/bot';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import * as v from 'valibot';
+
+function formatPost(recall: Recall) {
+  return `🚨 RECALL ALERT (${recall.category}) 🚨
+
+PRODUCT: ${recall.product}
+COMPANY: ${recall.company}
+REASON: ${recall.reason}
+
+Stay safe and informed! 🛡
+For more details, see below! 👇`;
+}
+
+function createPostData(recall: Recall) {
+  return {
+    text: formatPost(recall),
+    langs: ['en-US'],
+    embed: {
+      $type: 'app.bsky.embed.external',
+      external: {
+        uri: recall.linkHref,
+        title: recall.linkText,
+        description: `Category: ${recall.category}\nReason: ${recall.reason}`,
+      },
+    },
+  };
+}
 
 export class FdaWorkflow extends WorkflowEntrypoint<Env> {
   async run(_: WorkflowEvent<Params>, step: WorkflowStep) {
@@ -89,25 +115,7 @@ export class FdaWorkflow extends WorkflowEntrypoint<Env> {
       const posts: NewPost[] = [];
       for (const recall of unpostedNewRecalls) {
         const post = await step.do(`post recall: ${recall.linkHref}`, async () => {
-          const postData = {
-            text: `🚨 RECALL ALERT (${recall.category}) 🚨
-PRODUCT: ${recall.product}
-COMPANY: ${recall.company}
-REASON: ${recall.reason}
-
-Stay safe and informed! 🛡
-For more details, see below! 👇`,
-            langs: ['en-US'],
-            embed: {
-              $type: 'app.bsky.embed.external',
-              external: {
-                uri: recall.linkHref,
-                title: recall.linkText,
-                description: `Category: ${recall.category}\nReason: ${recall.reason}`,
-              },
-            },
-          };
-
+          const postData = createPostData(recall);
           const postInfo = await bot.post(postData, { publish: process.env.NODE_ENV === 'production' });
 
           return v.parse(NewPostSchema, {
