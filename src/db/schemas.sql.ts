@@ -1,6 +1,8 @@
 import { createdAt, deletedAt, id, updatedAt } from '@/db/extra';
+import { createInsertSchema, createSelectSchema } from '@/lib/drizzle-valibot';
 import { relations } from 'drizzle-orm';
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import type * as v from 'valibot';
 
 export const recallsTable = sqliteTable('recalls', {
   ...id,
@@ -78,5 +80,8 @@ export const postsTableRelations = relations(postsTable, ({ one }) => ({
   }),
 }));
 
-export type NewPost = (typeof postsTable)['$inferInsert'];
-export type Post = (typeof postsTable)['$inferSelect'];
+export const NewPostSchema = createInsertSchema(postsTable);
+export const PostSchema = createSelectSchema(postsTable);
+
+export type NewPost = v.InferOutput<typeof NewPostSchema>;
+export type Post = v.InferOutput<typeof PostSchema>;
