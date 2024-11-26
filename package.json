@@ -20,7 +20,8 @@
     "db:drop": "drizzle-kit drop",
     "db:pull": "drizzle-kit pull",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:migrate:REMOTE": "wrangler d1 migrations apply DB --env production"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
