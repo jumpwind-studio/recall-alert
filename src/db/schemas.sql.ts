@@ -2,7 +2,7 @@ import { createdAt, deletedAt, id, updatedAt } from '@/db/extra';
 import { createInsertSchema, createSelectSchema } from '@/lib/drizzle-valibot';
 import { relations } from 'drizzle-orm';
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import type * as v from 'valibot';
+import * as v from 'valibot';
 
 export const recallsTable = sqliteTable('recalls', {
   ...id,
@@ -29,8 +29,17 @@ export const recallsTableRelations = relations(recallsTable, ({ one, many }) => 
   posts: many(postsTable),
 }));
 
-export type NewRecall = (typeof recallsTable)['$inferInsert'];
-export type Recall = (typeof recallsTable)['$inferSelect'];
+export const NewRecallSchema = createInsertSchema(recallsTable, {
+  date: v.optional(v.date()),
+  id: v.never(),
+  createdAt: v.never(),
+  updatedAt: v.never(),
+  deletedAt: v.never(),
+});
+export const RecallSchema = createSelectSchema(recallsTable);
+
+export type NewRecall = v.InferInput<typeof NewRecallSchema>;
+export type Recall = v.InferInput<typeof RecallSchema>;
 
 export const sourcesTable = sqliteTable('sources', {
   ...id,
@@ -53,21 +62,29 @@ export const sourcesTableRelations = relations(sourcesTable, ({ many }) => ({
   recalls: many(recallsTable),
 }));
 
-export type NewSource = (typeof sourcesTable)['$inferInsert'];
-export type Source = (typeof sourcesTable)['$inferSelect'];
+export const NewSourceSchema = createInsertSchema(sourcesTable, {
+  id: v.never(),
+  createdAt: v.never(),
+  updatedAt: v.never(),
+  deletedAt: v.never(),
+});
+export const SourceSchema = createSelectSchema(sourcesTable);
+
+export type NewSource = v.InferInput<typeof NewSourceSchema>;
+export type Source = v.InferInput<typeof SourceSchema>;
 
 export const postsTable = sqliteTable('posts', {
   ...id,
+  recallId: integer()
+    .references(() => recallsTable.id)
+    .notNull(),
   title: text().notNull(),
   content: text().notNull(),
-  uri: text().notNull(),
+  uri: text().notNull().unique(),
   cid: text().notNull(),
   metadata: text({ mode: 'json' }),
   embeds: text({ mode: 'json' }),
   raw: text({ mode: 'json' }).notNull(),
-  recallId: integer()
-    .references(() => recallsTable.id)
-    .notNull(),
   ...createdAt,
   ...updatedAt,
   ...deletedAt,
@@ -80,8 +97,13 @@ export const postsTableRelations = relations(postsTable, ({ one }) => ({
   }),
 }));
 
-export const NewPostSchema = createInsertSchema(postsTable);
+export const NewPostSchema = createInsertSchema(postsTable, {
+  id: v.never(),
+  createdAt: v.never(),
+  updatedAt: v.never(),
+  deletedAt: v.never(),
+});
 export const PostSchema = createSelectSchema(postsTable);
 
-export type NewPost = v.InferOutput<typeof NewPostSchema>;
-export type Post = v.InferOutput<typeof PostSchema>;
+export type NewPost = v.InferInput<typeof NewPostSchema>;
+export type Post = v.InferInput<typeof PostSchema>;

@@ -1,12 +1,15 @@
 import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from 'cloudflare:workers';
 import { createFdaClient } from '@/api/fda';
 import { useDatabase } from '@/db/client';
-import { type NewPost, NewPostSchema, type Recall, postsTable, recallsTable } from '@/db/schemas.sql';
+import { NewPostSchema, type Recall, postsTable, recallsTable, sourcesTable } from '@/db/schemas.sql';
 import { createBskyBot } from '@/integrations/bsky/bot';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
+import type { BatchItem } from 'drizzle-orm/batch';
 import * as v from 'valibot';
 
-function formatPost(recall: Recall) {
+const NOOP = undefined;
+
+function formatPost(recall: Recall): string {
   return `🚨 RECALL ALERT (${recall.category}) 🚨
 
 PRODUCT: ${recall.product}
@@ -17,9 +20,9 @@ Stay safe and informed! 🛡
 For more details, see below! 👇`;
 }
 
-function createPostData(recall: Recall) {
-  return {
-    text: formatPost(recall),
+function buildPosts(recall: Recall, formatCallback: (recall: Recall) => string = formatPost) {
+  const postData = {
+    text: formatCallback(recall),
     langs: ['en-US'],
     embed: {
       $type: 'app.bsky.embed.external',
@@ -30,114 +33,96 @@ function createPostData(recall: Recall) {
       },
     },
   };
+
+  return v.parse(NewPostSchema, {
+    recallId: recall.id,
+    title: 'FDA Recall',
+    content: postData.text,
+    raw: JSON.stringify({ postData }),
+    embeds: JSON.stringify(postData.embed),
+    uri: '',
+    cid: '',
+  });
 }
 
 export class FdaWorkflow extends WorkflowEntrypoint<Env> {
   async run(_: WorkflowEvent<Params>, step: WorkflowStep) {
-    const fdaResult = await step.do(
-      'fetch recall data',
-      {
-        retries: {
-          limit: 5,
-          delay: 1000 * 60, // 1 minute
-          backoff: 'exponential',
-        },
-        timeout: '30 seconds',
-      },
-      async () => {
-        const fdaClient = createFdaClient();
-
-        const res = await fdaClient.list();
-        return res.unwrap('Failed to fetch recall data');
-      },
-    );
+    const { data: recallData } = await step.do('fetch live recall data', async () => {
+      return createFdaClient()
+        .list()
+        .then((res) => res.unwrap('Failed to fetch recall data'));
+    });
 
     const sourceId = await step.do('fetch source id', async () => {
-      const db = useDatabase(this.env.DB);
-
-      return db.query.sources
-        .findFirst({
-          where: (sources, { eq }) => eq(sources.key, 'US-FDA'),
-          columns: { id: true },
-        })
-        .then((source) => source?.id);
+      const [row] = await useDatabase(this.env.DB)
+        .select({ sourceId: sourcesTable.id })
+        .from(sourcesTable)
+        .where(eq(sourcesTable.key, 'US-FDA'))
+        .limit(1);
+      return row.sourceId;
     });
-    if (!sourceId) {
-      throw new Error('Source not found');
-    }
 
-    const newRecalls = await step.do('persist new recalls', async () => {
-      const db = useDatabase(this.env.DB);
-
-      return db
+    const recalls = await step.do('persist recall data', async () => {
+      return useDatabase(this.env.DB)
         .insert(recallsTable)
-        .values(
-          fdaResult.data.map((recall) => ({
-            ...recall,
-            sourceId,
-          })),
-        )
-        .onConflictDoNothing({
-          target: recallsTable.linkHref,
-        })
+        .values(recallData.map((recall) => ({ ...recall, sourceId })))
+        .onConflictDoNothing({ target: recallsTable.linkHref })
         .returning();
     });
 
-    const unpostedNewRecalls = await step.do('get unposted new recalls', async () => {
-      const db = useDatabase(this.env.DB);
+    if (!recalls || recalls.length === 0) {
+      console.log('No new recalls found');
+      return NOOP;
+    }
 
-      return db
-        .select({ recalls: recallsTable })
-        .from(recallsTable)
-        .leftJoin(postsTable, eq(recallsTable.id, postsTable.recallId))
-        .where(
-          and(
-            isNull(postsTable.recallId),
-            inArray(
-              recallsTable.id,
-              newRecalls.map((r) => r.id),
-            ),
-          ),
-        )
-        .then((results) => results.map((r) => r.recalls));
+    const postData = await step.do('create posts', async () => {
+      return recalls.map((recall) => buildPosts(recall));
     });
 
-    const postedPosts = await step.do('broadcast unposted new recalls', async (): Promise<NewPost[]> => {
-      if (!unpostedNewRecalls || unpostedNewRecalls.length === 0) {
-        return [] as NewPost[];
-      }
+    const posts = await step.do('create posts', async () => {
+      return useDatabase(this.env.DB)
+        .insert(postsTable)
+        .values(postData)
+        .onConflictDoNothing({ target: [postsTable.uri] })
+        .returning({
+          id: postsTable.id,
+          recallId: postsTable.recallId,
+          content: postsTable.content,
+        });
+    });
 
+    const publishedPosts = await step.do('post recalls', async () => {
       const bot = createBskyBot({
         identifier: this.env.BSKY_USERNAME,
         password: this.env.BSKY_PASSWORD,
       });
 
-      const posts: NewPost[] = [];
-      for (const recall of unpostedNewRecalls) {
-        const post = await step.do(`post recall: ${recall.linkHref}`, async () => {
-          const postData = createPostData(recall);
-          const postInfo = await bot.post(postData, { publish: process.env.NODE_ENV === 'production' });
+      return Promise.all(
+        posts.map((post) => {
+          return step.do(`post ${post.id}`, async () => {
+            const bskyData = await bot.post(post.content, {
+              publish: process.env.NODE_ENV === 'production',
+            });
 
-          return v.parse(NewPostSchema, {
-            recallId: recall.id,
-            title: `FDA Recall: ${recall.product} @ ${recall.company}`,
-            content: postData.text,
-            uri: (postInfo.uri as string) ?? '',
-            cid: (postInfo.cid as string) ?? '',
-            raw: JSON.stringify({ postData }),
-            embeds: JSON.stringify(postData.embed),
+            return {
+              ...bskyData,
+              id: post.id,
+            };
           });
-        });
-
-        posts.push(post);
-      }
-      return posts;
+        }),
+      );
     });
 
-    await step.do('persist posts', async () => {
+    await step.do('update posts', async () => {
       const db = useDatabase(this.env.DB);
 
-      await db.insert(postsTable).values(postedPosts).returning();
+      await db.batch(
+        await Promise.all(
+          publishedPosts.map(({ id, ...publishedPost }) =>
+            db.update(postsTable).set(publishedPost).where(eq(postsTable.id, id)),
+          ) as unknown as [BatchItem<'sqlite'>, ...BatchItem<'sqlite'>[]],
+        ),
+      );
     });
   }
 }

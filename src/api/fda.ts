@@ -8,33 +8,6 @@ const REGEX_DATE = /datetime="([^"]+)"/;
 const REGEX_HREF = /href="([^"]+)"/;
 const REGEX_TEXT = />([^<]+)</;
 
-const FdaResponseDataSchema = v.pipe(
-  v.array(v.string()),
-  v.transform((data) => {
-    const [date, link, product, category, reason, company] = data.map((html) => he.decode(html));
-
-    const matchedDate = date.match(REGEX_DATE);
-    return {
-      date: matchedDate ? new Date(matchedDate[1]) : undefined,
-      linkHref: link.match(REGEX_HREF)?.[1] ?? '',
-      linkText: link.match(REGEX_TEXT)?.[1]?.trim() ?? '',
-      product,
-      category,
-      reason,
-      company,
-    } satisfies Omit<NewRecall, 'sourceId'>;
-  }),
-);
-
-export const FdaResponseSchema = v.object({
-  draw: v.number(),
-  recordsTotal: v.number(),
-  recordsFiltered: v.number(),
-  data: v.array(FdaResponseDataSchema),
-});
-
-export type FdaResponse = v.InferOutput<typeof FdaResponseSchema>;
-
 type Column =
   | `columns[${number}][${'data' | 'searchable' | 'orderable' | 'name'}]`
   | `columns[${number}][search][${'value' | 'regex'}]`;
@@ -110,24 +83,48 @@ export function createFdaClient() {
   });
 
   return {
-    list: (params?: v.InferInput<(typeof client)['schema']>) =>
-      Result.try(async () => {
+    list: async (params?: v.InferInput<(typeof client)['schema']>) => {
+      return Result.try(async () => {
         const resp = await client.get(params);
         if (!resp.ok) {
           throw new Error(`${resp.status} ${resp.statusText}`);
         }
 
-        const { data, ...meta } = v.parse(FdaResponseSchema, await resp.json());
+        const { data, ...meta } = v.parse(
+          v.object({
+            draw: v.number(),
+            recordsTotal: v.number(),
+            recordsFiltered: v.number(),
+            data: v.array(
+              v.pipe(
+                v.array(v.string()),
+                v.transform((data) => {
+                  const [date, link, product, category, reason, company] = data.map((html) => {
+                    return he.decode(html);
+                  });
+
+                  return {
+                    date: new Date(date.match(REGEX_DATE)?.[1] ?? ''),
+                    linkHref: new URL(link.match(REGEX_HREF)?.[1] ?? '', client.url).href,
+                    linkText: link.match(REGEX_TEXT)?.[1]?.trim() ?? '',
+                    product,
+                    category,
+                    reason,
+                    company,
+                  } satisfies Omit<NewRecall, 'sourceId'>;
+                }),
+              ),
+            ),
+          }),
+          await resp.json(),
+        );
 
         return {
           name: client.name,
           meta,
-          // Link hrefs are relative, so we need to resolve them.
-          data: data.map((row) => ({
-            ...row,
-            linkHref: new URL(row.linkHref, client.url).href,
-          })),
+          data,
         };
-      }),
+      });
+    },
   };
 }

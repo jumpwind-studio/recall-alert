@@ -1,17 +1,14 @@
-import type { AppBskyFeedPost, AtpAgentLoginOpts } from '@atproto/api';
+import { AppBskyFeedPost, type AtpAgentLoginOpts } from '@atproto/api';
 import { Agent, CredentialSession, RichText } from '@atproto/api';
-import { isRecord } from '@atproto/api/dist/client/types/app/bsky/feed/post';
-
-const IS_PROD = process.env.NODE_ENV === 'production';
 
 type BskyBotOptions = {
   service?: URL;
 };
 
-type PostRecord = Omit<AppBskyFeedPost.Record, 'entities' | 'createdAt'>;
+export type PostRecord = Omit<AppBskyFeedPost.Record, 'entities' | 'createdAt'>;
 
 function isPostRecord(value: unknown): value is PostRecord {
-  return isRecord(value);
+  return AppBskyFeedPost.isRecord(value);
 }
 
 export default class BskyBot {
@@ -30,16 +27,12 @@ export default class BskyBot {
 
   async post(
     content: PostRecord | string,
-    opts?: { publish?: boolean },
-  ): Promise<PostRecord | { uri: string; cid: string }> {
+    { publish = true }: { publish?: boolean },
+  ): Promise<{ uri: string; cid: string }> {
     const record = this.#resolvePostContent(content);
 
-    const { publish = true } = opts ?? {};
     if (!publish) {
-      return record;
-    }
-    if (!IS_PROD) {
-      return record;
+      return { uri: '', cid: '' };
     }
 
     return this.#agent.post(record);
