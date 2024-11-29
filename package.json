@@ -21,17 +21,17 @@
     "db:pull": "drizzle-kit pull",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:migrate:REMOTE": "wrangler d1 migrations apply DB --env production"
+    "db:migrate:REMOTE": "wrangler d1 migrations apply DB --remote"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@cloudflare/workers-types": "^4.20241112.0",
+    "@cloudflare/workers-types": "^4.20241127.0",
     "@types/he": "^1.2.3",
-    "@types/node": "^22.9.3",
-    "better-sqlite3": "^11.5.0",
+    "@types/node": "^22.10.1",
+    "better-sqlite3": "^11.6.0",
     "drizzle-kit": "^0.28.1",
     "typescript": "^5.7.2",
-    "wrangler": "^3.90.0"
+    "wrangler": "^3.91.0"
   },
   "dependencies": {
     "@atproto/api": "^0.13.18",
@@ -39,6 +39,6 @@
     "drizzle-orm": "^0.36.4",
     "drizzle-valibot": "^0.2.0",
     "he": "^1.2.0",
-    "valibot": "1.0.0-beta.8"
+    "valibot": "1.0.0-beta.9"
   }
 }
