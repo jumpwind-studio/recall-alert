@@ -1,4 +1,4 @@
-CREATE TABLE `posts` (
+CREATE TABLE IF NOT EXISTS `posts` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`recallId` integer NOT NULL,
 	`title` text NOT NULL,
@@ -14,8 +14,8 @@ CREATE TABLE `posts` (
 	FOREIGN KEY (`recallId`) REFERENCES `recalls`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `posts_uri_unique` ON `posts` (`uri`);--> statement-breakpoint
-CREATE TABLE `recalls` (
+CREATE UNIQUE INDEX IF NOT EXISTS `posts_uri_unique` ON `posts` (`uri`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `recalls` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`sourceId` integer NOT NULL,
 	`linkHref` text NOT NULL,
@@ -31,8 +31,8 @@ CREATE TABLE `recalls` (
 	FOREIGN KEY (`sourceId`) REFERENCES `sources`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `recalls_linkHref_unique` ON `recalls` (`linkHref`);--> statement-breakpoint
-CREATE TABLE `sources` (
+CREATE UNIQUE INDEX IF NOT EXISTS `recalls_linkHref_unique` ON `recalls` (`linkHref`);--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS `sources` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`key` text NOT NULL,
 	`name` text NOT NULL,
@@ -41,5 +41,5 @@ CREATE TABLE `sources` (
 	`deleted_at` integer
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `sources_key_unique` ON `sources` (`key`);
+CREATE UNIQUE INDEX IF NOT EXISTS `sources_key_unique` ON `sources` (`key`);
 INSERT OR IGNORE INTO `sources` (`key`, `name`) VALUES ('US-FDA', 'U.S. Food and Drug Administration');
