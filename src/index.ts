@@ -34,7 +34,7 @@ export default {
       .orderBy(desc(postsTable.createdAt))
       .limit(5);
 
-    return Response.json(JSON.stringify(lastPosts));
+    return Response.json(lastPosts);
   },
   scheduled: async (_event, env, ctx) => {
     ctx.waitUntil(env.WORKFLOW_FDA.create());
