@@ -1,3 +1,7 @@
+import { desc } from 'drizzle-orm';
+import { useDatabase } from './db/client';
+import { postsTable } from './db/schemas.sql';
+
 // Export workflows
 export { FdaWorkflow } from '@/workflows';
 
@@ -10,23 +14,27 @@ export default {
       return Response.json({}, { status: 404 });
     }
 
-    // Get the status of an existing instance, if provided
     const id = url.searchParams.get('instanceId') || url.searchParams.get('id');
     if (id) {
       const instance = await env.WORKFLOW_FDA.get(id);
 
       return Response.json({
+        id,
         status: await instance.status(),
       });
     }
 
-    // Spawn a new instance and return the ID and status
-    const instance = await env.WORKFLOW_FDA.create();
+    const lastPosts = await useDatabase(env.DB)
+      .select({
+        id: postsTable.id,
+        uri: postsTable.uri,
+        content: postsTable.content,
+      })
+      .from(postsTable)
+      .orderBy(desc(postsTable.createdAt))
+      .limit(5);
 
-    return Response.json({
-      id: instance.id,
-      details: await instance.status(),
-    });
+    return Response.json(JSON.stringify(lastPosts));
   },
   scheduled: async (_event, env, ctx) => {
     ctx.waitUntil(env.WORKFLOW_FDA.create());
