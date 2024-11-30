@@ -101,7 +101,7 @@ export class FdaWorkflow extends WorkflowEntrypoint<Env> {
         posts.map((post) => {
           return step.do(`post ${post.id}`, async () => {
             const bskyData = await bot.post(post.content, {
-              publish: process.env.NODE_ENV === 'production',
+              publish: this.env.BSKY_USERNAME === 'CF_PROD',
             });
 
             return {
