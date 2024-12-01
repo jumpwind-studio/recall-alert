@@ -105,8 +105,8 @@ export function createFdaClient() {
 
                   return {
                     date: new Date(date.match(REGEX_DATE)?.[1] ?? ''),
-                    linkHref: new URL(link.match(REGEX_HREF)?.[1] ?? '', client.url).href,
-                    linkText: link.match(REGEX_TEXT)?.[1]?.trim() ?? '',
+                    url: new URL(link.match(REGEX_HREF)?.[1] ?? '', client.url).href,
+                    brand: link.match(REGEX_TEXT)?.[1]?.trim() ?? '',
                     product,
                     category,
                     reason,

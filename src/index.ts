@@ -1,11 +1,9 @@
-import { desc } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { useDatabase } from './db/client';
-import { postsTable } from './db/schemas.sql';
+import { postsTable, recallsTable } from './db/schemas.sql';
 
-// Export workflows
 export { FdaWorkflow } from '@/workflows';
 
-// Export worker handlers
 export default {
   fetch: async (req, env) => {
     const url = new URL(req.url);
@@ -29,10 +27,21 @@ export default {
         id: postsTable.id,
         uri: postsTable.uri,
         content: postsTable.content,
+        recall: {
+          id: recallsTable.id,
+          brand: recallsTable.brand,
+          category: recallsTable.category,
+          company: recallsTable.company,
+          date: recallsTable.date,
+          product: recallsTable.product,
+          reason: recallsTable.reason,
+          url: recallsTable.url,
+        },
       })
-      .from(postsTable)
+      .from(recallsTable)
+      .leftJoin(postsTable, eq(recallsTable.id, postsTable.recallId))
       .orderBy(desc(postsTable.createdAt))
-      .limit(5);
+      .limit(10);
 
     return Response.json(lastPosts);
   },

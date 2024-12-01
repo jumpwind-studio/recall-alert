@@ -1,49 +1,13 @@
 import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from 'cloudflare:workers';
 import { createFdaClient } from '@/api/fda';
 import { useDatabase } from '@/db/client';
-import { NewPostSchema, type Recall, postsTable, recallsTable, sourcesTable } from '@/db/schemas.sql';
+import { type NewPost, NewPostSchema, postsTable, recallsTable, sourcesTable } from '@/db/schemas.sql';
 import { createBskyBot } from '@/integrations/bsky/bot';
 import { eq } from 'drizzle-orm';
 import type { BatchItem } from 'drizzle-orm/batch';
 import * as v from 'valibot';
 
 const NOOP = undefined;
-
-function formatPost(recall: Recall): string {
-  return `🚨 RECALL ALERT (${recall.category}) 🚨
-
-PRODUCT: ${recall.product}
-COMPANY: ${recall.company}
-REASON: ${recall.reason}
-
-Stay safe and informed! 🛡
-For more details, see below! 👇`;
-}
-
-function buildPosts(recall: Recall, formatCallback: (recall: Recall) => string = formatPost) {
-  const postData = {
-    text: formatCallback(recall),
-    langs: ['en-US'],
-    embed: {
-      $type: 'app.bsky.embed.external',
-      external: {
-        uri: recall.linkHref,
-        title: recall.linkText,
-        description: `Category: ${recall.category}\nReason: ${recall.reason}`,
-      },
-    },
-  };
-
-  return v.parse(NewPostSchema, {
-    recallId: recall.id,
-    title: 'FDA Recall',
-    content: postData.text,
-    raw: JSON.stringify({ postData }),
-    embeds: JSON.stringify(postData.embed),
-    uri: '',
-    cid: '',
-  });
-}
 
 export class FdaWorkflow extends WorkflowEntrypoint<Env> {
   async run(_: WorkflowEvent<Params>, step: WorkflowStep) {
@@ -66,7 +30,7 @@ export class FdaWorkflow extends WorkflowEntrypoint<Env> {
       return useDatabase(this.env.DB)
         .insert(recallsTable)
         .values(recallData.map((recall) => ({ ...recall, sourceId })))
-        .onConflictDoNothing({ target: recallsTable.linkHref })
+        .onConflictDoNothing({ target: recallsTable.url })
         .returning();
     });
 
@@ -76,7 +40,37 @@ export class FdaWorkflow extends WorkflowEntrypoint<Env> {
     }
 
     const postData = await step.do('create posts', async () => {
-      return recalls.map((recall) => buildPosts(recall));
+      return recalls.map((recall) => {
+        const postData = {
+          text: `🚨 RECALL ALERT (${recall.category}) 🚨
+
+Product: ${recall.product}
+Company: ${recall.company}
+Reason: ${recall.reason}
+
+Stay safe and informed! 🛡
+For more details, see below! 👇`,
+          langs: ['en-US'],
+          embed: {
+            $type: 'app.bsky.embed.external',
+            external: {
+              uri: recall.url,
+              title: `${recall.brand} announce(s) recall!`,
+              description: recall.reason,
+            },
+          },
+        };
+
+        return v.parse(NewPostSchema, {
+          recallId: recall.id,
+          title: `${recall.brand} announce(s) recall!`,
+          content: postData.text,
+          raw: JSON.stringify({ postData }),
+          embeds: JSON.stringify(postData.embed),
+          uri: '',
+          cid: '',
+        }) as NewPost;
+      });
     });
 
     const posts = await step.do('create posts', async () => {

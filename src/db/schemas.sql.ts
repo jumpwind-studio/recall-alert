@@ -9,13 +9,13 @@ export const recallsTable = sqliteTable('recalls', {
   sourceId: integer()
     .references(() => sourcesTable.id)
     .notNull(),
-  linkHref: text().notNull().unique(),
-  linkText: text().notNull(),
+  url: text().notNull().unique(),
+  brand: text().notNull().$type<'Multiple brand names' | string>(),
   product: text().notNull(),
   category: text().notNull(),
   reason: text().notNull(),
   company: text().notNull(),
-  date: integer({ mode: 'timestamp' }).$type<Date>(),
+  date: integer({ mode: 'timestamp' }).notNull(),
   ...createdAt,
   ...updatedAt,
   ...deletedAt,
@@ -30,7 +30,6 @@ export const recallsTableRelations = relations(recallsTable, ({ one, many }) => 
 }));
 
 export const NewRecallSchema = createInsertSchema(recallsTable, {
-  date: v.optional(v.date()),
   id: v.never(),
   createdAt: v.never(),
   updatedAt: v.never(),
@@ -39,7 +38,7 @@ export const NewRecallSchema = createInsertSchema(recallsTable, {
 export const RecallSchema = createSelectSchema(recallsTable);
 
 export type NewRecall = v.InferInput<typeof NewRecallSchema>;
-export type Recall = v.InferInput<typeof RecallSchema>;
+export type Recall = v.InferOutput<typeof RecallSchema>;
 
 export const sourcesTable = sqliteTable('sources', {
   ...id,
@@ -71,7 +70,7 @@ export const NewSourceSchema = createInsertSchema(sourcesTable, {
 export const SourceSchema = createSelectSchema(sourcesTable);
 
 export type NewSource = v.InferInput<typeof NewSourceSchema>;
-export type Source = v.InferInput<typeof SourceSchema>;
+export type Source = v.InferOutput<typeof SourceSchema>;
 
 export const postsTable = sqliteTable('posts', {
   ...id,
@@ -106,4 +105,4 @@ export const NewPostSchema = createInsertSchema(postsTable, {
 export const PostSchema = createSelectSchema(postsTable);
 
 export type NewPost = v.InferInput<typeof NewPostSchema>;
-export type Post = v.InferInput<typeof PostSchema>;
+export type Post = v.InferOutput<typeof PostSchema>;
