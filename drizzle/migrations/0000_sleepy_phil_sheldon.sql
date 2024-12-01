@@ -18,20 +18,20 @@ CREATE UNIQUE INDEX IF NOT EXISTS `posts_uri_unique` ON `posts` (`uri`);--> stat
 CREATE TABLE IF NOT EXISTS `recalls` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`sourceId` integer NOT NULL,
-	`linkHref` text NOT NULL,
-	`linkText` text NOT NULL,
+	`url` text NOT NULL,
+	`brand` text NOT NULL,
 	`product` text NOT NULL,
 	`category` text NOT NULL,
 	`reason` text NOT NULL,
 	`company` text NOT NULL,
-	`date` integer,
+	`date` integer NOT NULL,
 	`createdAt` integer DEFAULT (strftime('%s', 'now')) NOT NULL,
 	`updatedAt` integer DEFAULT (strftime('%s', 'now')) NOT NULL,
 	`deleted_at` integer,
 	FOREIGN KEY (`sourceId`) REFERENCES `sources`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS `recalls_linkHref_unique` ON `recalls` (`linkHref`);--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `recalls_url_unique` ON `recalls` (`url`);--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS `sources` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`key` text NOT NULL,

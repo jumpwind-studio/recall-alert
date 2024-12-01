@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "9de1a47a-e906-4129-ba2b-f45d57e80e1f",
+  "id": "a9948fc0-0f7f-4ac2-95d5-808f3b997b9b",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "posts": {
@@ -139,15 +139,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "linkHref": {
-          "name": "linkHref",
+        "url": {
+          "name": "url",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "linkText": {
-          "name": "linkText",
+        "brand": {
+          "name": "brand",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -185,7 +185,7 @@
           "name": "date",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "createdAt": {
@@ -213,10 +213,10 @@
         }
       },
       "indexes": {
-        "recalls_linkHref_unique": {
-          "name": "recalls_linkHref_unique",
+        "recalls_url_unique": {
+          "name": "recalls_url_unique",
           "columns": [
-            "linkHref"
+            "url"
           ],
           "isUnique": true
         }
