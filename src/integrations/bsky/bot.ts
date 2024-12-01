@@ -27,11 +27,11 @@ export default class BskyBot {
 
   async post(
     content: PostRecord | string,
-    { publish = true }: { publish?: boolean },
+    options?: { publish?: boolean },
   ): Promise<{ uri: string; cid: string }> {
     const record = this.#resolvePostContent(content);
 
-    if (!publish) {
+    if (!options?.publish) {
       return { uri: '', cid: '' };
     }
 

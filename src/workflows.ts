@@ -94,9 +94,7 @@ For more details, see below! 👇`,
       return Promise.all(
         posts.map((post) => {
           return step.do(`post ${post.id}`, async () => {
-            const bskyData = await bot.post(post.content, {
-              publish: this.env.BSKY_USERNAME === 'CF_PROD',
-            });
+            const bskyData = await bot.post(post.content);
 
             return {
               ...bskyData,
