@@ -19,7 +19,7 @@ class_name = "FdaWorkflow"
 [[d1_databases]]
 binding = "DB"
 database_name = "recall-alert-prod"
-database_id = "b2b517f6-a2ba-4a34-a9c7-8e68d91afc32"
+database_id = "e14fe74a-668b-42eb-86da-37beda02a487"
 migrations_dir = "drizzle/migrations"
 preview_database_id = "DB"                           # should match binding name
 
