@@ -51,14 +51,10 @@ export class Client<TSchema extends AnyObjectSchema> {
 
   async get(params?: v.InferInput<TSchema>) {
     const res = v.parse(this.schema, params ?? {});
-    // if (!res.success) {
-    //   const errs = JSON.stringify(v.flatten(res.issues), null, 2);
-    //   return new Response(errs, { status: 400 });
-    // }
 
     const searchParams = new URLSearchParams({
       ...this.#searchParams,
-      ...(res ?? {}),
+      ...res,
     });
 
     return fetch(`${this.#url}?${searchParams}`, {
