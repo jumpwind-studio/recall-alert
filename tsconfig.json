@@ -14,6 +14,7 @@
     /* Specify type package names to be included without being referenced in a source file. */
     "types": [
       "@cloudflare/workers-types",
+      "@cloudflare/vitest-pool-workers",
       "node"
     ],
     /* Enable importing .json files */

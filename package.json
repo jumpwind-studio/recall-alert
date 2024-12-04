@@ -25,12 +25,14 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
+    "@cloudflare/vitest-pool-workers": "^0.5.33",
     "@cloudflare/workers-types": "^4.20241202.0",
     "@types/he": "^1.2.3",
     "@types/node": "^22.10.1",
     "better-sqlite3": "^11.6.0",
     "drizzle-kit": "^0.29.1",
     "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
     "wrangler": "^3.92.0"
   },
   "dependencies": {
