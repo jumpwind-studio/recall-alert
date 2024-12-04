@@ -7,7 +7,7 @@ compatibility_flags = ["nodejs_compat_v2"]
 # Variable bindings.
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
 [vars]
-BSKY_USERNAME = 'CF_PROD'
+BSKY_USERNAME = 'CF_DEV'
 
 # Docs: https://developers.cloudflare.com/workflows/
 [[workflows]]
