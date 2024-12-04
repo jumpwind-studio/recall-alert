@@ -20,7 +20,15 @@ export default class BskyBot {
     this.#session = new CredentialSession(service);
     this.#agent = new Agent(this.#session);
 
-    this.login(auth);
+    console.debug('Logging in with', JSON.stringify(auth));
+
+    try {
+      this.login(auth);
+    } catch (err) {
+      console.error('Failed to login:', err);
+      throw err;
+    }
+    console.debug('Logged in');
   }
 
   login: CredentialSession['login'] = async (opts) => this.#session.login(opts);
