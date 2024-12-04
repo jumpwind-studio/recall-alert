@@ -20,7 +20,7 @@ export default class BskyBot {
     this.#session = new CredentialSession(service);
     this.#agent = new Agent(this.#session);
 
-    console.debug('Logging in with', JSON.stringify(auth));
+    console.debug('Logging in as', auth.identifier);
 
     try {
       this.login(auth);
