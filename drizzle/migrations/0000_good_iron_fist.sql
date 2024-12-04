@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS `posts` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`recallId` integer NOT NULL,
+	`recallId` integer,
 	`title` text NOT NULL,
 	`content` text NOT NULL,
 	`uri` text NOT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS `posts` (
 	`createdAt` integer DEFAULT (strftime('%s', 'now')) NOT NULL,
 	`updatedAt` integer DEFAULT (strftime('%s', 'now')) NOT NULL,
 	`deleted_at` integer,
-	FOREIGN KEY (`recallId`) REFERENCES `recalls`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`recallId`) REFERENCES `recalls`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS `posts_uri_unique` ON `posts` (`uri`);--> statement-breakpoint
