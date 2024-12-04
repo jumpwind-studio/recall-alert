@@ -1,51 +1,49 @@
-import { desc, eq } from 'drizzle-orm';
-import { useDatabase } from './db/client';
-import { postsTable, recallsTable } from './db/schemas.sql';
+import { hc } from 'hono/client';
+import api, { type API } from './server';
 
 export { FdaWorkflow } from '@/workflows';
 
+function createClient() {
+  return hc<API>('http://localhost:8787').api;
+}
+
+export type Client = ReturnType<typeof createClient>;
+
 export default {
-  fetch: async (req, env) => {
-    const url = new URL(req.url);
+  fetch: api.fetch,
+  scheduled: async () => {
+    const api = createClient();
 
-    if (url.pathname.startsWith('/favicon')) {
-      return Response.json({}, { status: 404 });
+    const recallsResponse = await api.recalls.$post({
+      json: { source: 'US-FDA' },
+    });
+    if (!recallsResponse.ok) {
+      console.log(`Failed to fetch recalls: ${await recallsResponse.text()}`);
+      return undefined;
+    }
+    if (recallsResponse.status === 200) {
+      console.log('No new recalls found');
+      return undefined;
     }
 
-    const id = url.searchParams.get('instanceId') || url.searchParams.get('id');
-    if (id) {
-      const instance = await env.WORKFLOW_FDA.get(id);
+    const { data: recalls } = await recallsResponse.json();
+    const recallIds = recalls.map(({ id }) => id);
+    console.log(`Fetched ${recallIds.length} recalls: ${recallIds.join(', ')}`);
 
-      return Response.json({
-        id,
-        status: await instance.status(),
-      });
+    const postsResponse = await api.posts.$post({
+      json: { ids: recallIds },
+    });
+    if (!postsResponse.ok) {
+      console.log(`Failed to create posts: ${await postsResponse.text()}`);
+      return undefined;
+    }
+    if (postsResponse.status === 200) {
+      console.log('No new posts created');
+      return undefined;
     }
 
-    const lastPosts = await useDatabase(env.DB)
-      .select({
-        id: postsTable.id,
-        uri: postsTable.uri,
-        content: postsTable.content,
-        recall: {
-          id: recallsTable.id,
-          brand: recallsTable.brand,
-          category: recallsTable.category,
-          company: recallsTable.company,
-          date: recallsTable.date,
-          product: recallsTable.product,
-          reason: recallsTable.reason,
-          url: recallsTable.url,
-        },
-      })
-      .from(recallsTable)
-      .leftJoin(postsTable, eq(recallsTable.id, postsTable.recallId))
-      .orderBy(desc(postsTable.createdAt))
-      .limit(10);
+    const { data: posts } = await postsResponse.json();
 
-    return Response.json(lastPosts);
-  },
-  scheduled: async (_event, env, ctx) => {
-    ctx.waitUntil(env.WORKFLOW_FDA.create());
+    console.log(JSON.stringify({ recalls, posts }, null, 2));
   },
 } satisfies ExportedHandler<Env>;
