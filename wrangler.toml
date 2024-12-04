@@ -13,7 +13,7 @@ BSKY_USERNAME = 'CF_DEV'
 [[d1_databases]]
 binding = "DB"
 database_name = "recall-alert-prod"
-database_id = "e14fe74a-668b-42eb-86da-37beda02a487"
+database_id = "f6063d5b-0a7c-4993-85d8-ade2e8f56f8f"
 migrations_dir = "drizzle/migrations"
 preview_database_id = "DB"                           # should match binding name
 
