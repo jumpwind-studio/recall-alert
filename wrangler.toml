@@ -9,12 +9,6 @@ compatibility_flags = ["nodejs_compat_v2"]
 [vars]
 BSKY_USERNAME = 'CF_DEV'
 
-# Docs: https://developers.cloudflare.com/workflows/
-[[workflows]]
-name = "fda-workflow"
-binding = "WORKFLOW_FDA"
-class_name = "FdaWorkflow"
-
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#d1-databases
 [[d1_databases]]
 binding = "DB"
