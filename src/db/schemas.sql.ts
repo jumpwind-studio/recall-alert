@@ -7,7 +7,7 @@ import * as v from 'valibot';
 export const recallsTable = sqliteTable('recalls', {
   ...id,
   sourceId: integer()
-    .references(() => sourcesTable.id)
+    .references(() => sourcesTable.id, { onDelete: 'no action' })
     .notNull(),
   url: text().notNull().unique(),
   brand: text().notNull().$type<'Multiple brand names' | string>(),
@@ -21,7 +21,7 @@ export const recallsTable = sqliteTable('recalls', {
   ...deletedAt,
 });
 
-export const recallsTableRelations = relations(recallsTable, ({ one, many }) => ({
+export const recallsRelations = relations(recallsTable, ({ one, many }) => ({
   source: one(sourcesTable, {
     fields: [recallsTable.sourceId],
     references: [sourcesTable.id],
@@ -57,7 +57,7 @@ export const sourcesTable = sqliteTable('sources', {
   ...deletedAt,
 });
 
-export const sourcesTableRelations = relations(sourcesTable, ({ many }) => ({
+export const sourcesRelations = relations(sourcesTable, ({ many }) => ({
   recalls: many(recallsTable),
 }));
 
@@ -74,9 +74,7 @@ export type Source = v.InferOutput<typeof SourceSchema>;
 
 export const postsTable = sqliteTable('posts', {
   ...id,
-  recallId: integer()
-    .references(() => recallsTable.id)
-    .notNull(),
+  recallId: integer().references(() => recallsTable.id, { onDelete: 'set null' }),
   title: text().notNull(),
   content: text().notNull(),
   uri: text().notNull().unique(),
@@ -89,7 +87,7 @@ export const postsTable = sqliteTable('posts', {
   ...deletedAt,
 });
 
-export const postsTableRelations = relations(postsTable, ({ one }) => ({
+export const postsRelations = relations(postsTable, ({ one }) => ({
   recall: one(recallsTable, {
     fields: [postsTable.recallId],
     references: [recallsTable.id],
