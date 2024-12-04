@@ -8,7 +8,8 @@ compatibility_flags = ["nodejs_compat_v2"]
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
 [vars]
 BSKY_USERNAME = 'CF_PROD'
-API_URL = 'bsky-bot-recalls.jumpwindstudio.workers.dev'
+API_URL = 'https://bsky-bot-recalls.jumpwindstudio.workers.dev'
+
 [env.dev.vars]
 BSKY_USERNAME = 'CF_DEV'
 API_URL = 'http://localhost:8787'
