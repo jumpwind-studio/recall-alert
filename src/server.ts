@@ -282,6 +282,10 @@ const sourcesRouter = new Hono<{ Bindings: Env }>().get(
 
 const api = new Hono<{ Bindings: Env }>()
   .basePath('/api')
+  // Index
+  .get('/', async (c) => c.json({ status: 'success' }, 200))
+  // Health Check
+  .get('/health', async (c) => c.json({ status: 'success' }, 200))
   // Recall API
   .route('/recalls', recallRouter)
   // Post API
