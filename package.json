@@ -25,19 +25,19 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@cloudflare/workers-types": "^4.20241127.0",
+    "@cloudflare/workers-types": "^4.20241202.0",
     "@types/he": "^1.2.3",
     "@types/node": "^22.10.1",
     "better-sqlite3": "^11.6.0",
-    "drizzle-kit": "^0.28.1",
+    "drizzle-kit": "^0.29.1",
     "typescript": "^5.7.2",
-    "wrangler": "^3.91.0"
+    "wrangler": "^3.92.0"
   },
   "dependencies": {
     "@atproto/api": "^0.13.18",
     "@hono/valibot-validator": "^0.5.1",
-    "dotenv": "^16.4.5",
-    "drizzle-orm": "^0.36.4",
+    "dotenv": "^16.4.7",
+    "drizzle-orm": "^0.37.0",
     "drizzle-valibot": "^0.2.0",
     "he": "^1.2.0",
     "hono": "^4.6.12",
