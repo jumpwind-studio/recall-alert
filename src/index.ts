@@ -4,7 +4,7 @@ import api, { type API } from './server';
 export default {
   fetch: api.fetch,
   async scheduled(_batch, env, _ctx) {
-    const { api } = hc<API>('/', {
+    const { api } = hc<API>('https://unusedurltobypassproxy', {
       fetch: env.API.fetch.bind(env.API),
     });
 
