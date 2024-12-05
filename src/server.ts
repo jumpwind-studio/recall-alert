@@ -1,18 +1,11 @@
+import { Agent, CredentialSession, RichText } from '@atproto/api';
 import { vValidator } from '@hono/valibot-validator';
-import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import * as v from 'valibot';
 import { createFdaClient } from './api/fda';
 import { useDatabase } from './db/client';
-import { type NewPost, postsTable, recallsTable, sourcesTable } from './db/schemas.sql';
-import { type PostRecord, createBskyBot } from './integrations/bsky/bot';
-
-// Successful Response Interface
-interface SuccessResponse<T> {
-  status: 'success';
-  data: T;
-  message?: string;
-}
+import { type NewPost, postsTable, recallsTable } from './db/schemas.sql';
+import type { PostRecord } from './integrations/bsky/bot';
 
 const recallRouter = new Hono<{ Bindings: Env }>()
   .get(
@@ -172,14 +165,16 @@ const postRouter = new Hono<{ Bindings: Env }>()
         return c.json({ error: 'No recalls found' }, 400);
       }
 
-      const bot = createBskyBot({
+      const session = new CredentialSession(new URL('https://bsky.social'));
+      const agent = new Agent(session);
+      await session.login({
         identifier: c.env.BSKY_USERNAME,
         password: c.env.BSKY_PASSWORD,
       });
 
       const posts: NewPost[] = [];
       for (const recall of recalls) {
-        const postData = {
+        const rt = new RichText({
           text: `🚨 RECALL ALERT (${recall.category}) 🚨
 
 Product: ${recall.product}
@@ -188,41 +183,34 @@ Reason: ${recall.reason}
 
 Stay safe and informed! 🛡
 For more details, see below! 👇`,
-          langs: ['en-US'],
-          embed: {
-            $type: 'app.bsky.embed.external',
-            external: {
-              uri: recall.url,
-              title: `${recall.brand} announce(s) recall!`,
-              description: recall.reason,
-            },
-          },
+        });
+
+        await rt.detectFacets(agent);
+
+        const postData = {
+          $type: 'app.bsky.feed.post',
+          text: rt.text,
+          facets: rt.facets,
           createdAt: new Date().toISOString(),
         } satisfies PostRecord;
 
-        try {
-          const postResponse = await bot.post(postData);
-          if (!postResponse) {
-            return c.json({ error: 'Failed to post recall' }, 400);
-          }
-
-          posts.push({
-            recallId: recall.id,
-            title: `${recall.brand} announce(s) recall!`,
-            content: postData.text,
-            raw: postData,
-            embeds: postData.embed,
-            uri: postResponse.uri,
-            cid: postResponse.cid,
-          });
-        } catch (err) {
-          console.error('Failed to post recall:', err);
+        const postResponse = await agent.post(postData);
+        if (postResponse.uri === '' || postResponse.cid === '') {
           return c.json({ error: 'Failed to post recall' }, 400);
         }
+
+        posts.push({
+          recallId: recall.id,
+          title: `${recall.brand} announce(s) recall!`,
+          content: postData.text,
+          raw: JSON.stringify(postData),
+          embeds: JSON.stringify(postData.facets),
+          uri: postResponse.uri,
+          cid: postResponse.cid,
+        });
       }
 
-      console.debug(`Created ${posts.length} posts`);
-      console.debug(JSON.stringify(posts, null, 2));
+      console.debug(`Created ${posts.length} posts\n`, JSON.stringify(posts, null, 2));
 
       const data = await db
         .insert(postsTable)
