@@ -3,8 +3,10 @@ import api, { type API } from './server';
 
 export default {
   fetch: api.fetch,
-  scheduled: async (_, env, ctx) => {
-    const { api } = hc<API>(env.API_URL);
+  async scheduled(_batch, env, _ctx) {
+    const { api } = hc<API>('/', {
+      fetch: env.API.fetch.bind(env.API),
+    });
 
     const recallsResponse = await api.recalls.$post({ json: { source: 'US-FDA' } });
     if (!recallsResponse.ok) {
